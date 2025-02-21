@@ -40,8 +40,10 @@ function Profile() {
     email: '',
     country: '',
     phoneNumber: '',
-    username: '', // Added username field
+    username: '',
   });
+
+  const isAdmin = user?.roles?.includes('ADMIN');
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -56,12 +58,11 @@ function Profile() {
           email: response.data.email || '',
           country: response.data.country || '',
           phoneNumber: response.data.phoneNumber || '',
-          username: response.data.username || '', // Added username
+          username: response.data.username || '',
         });
       } catch (error) {
         console.error('Profile fetch error:', error);
         setError(error.response?.data?.message || 'Failed to load profile');
-        // Don't clear the user here, let the AuthContext handle token invalidation
       } finally {
         setLoading(false);
       }
@@ -84,9 +85,8 @@ function Profile() {
       setLoading(true);
       setError('');
       
-      // Remove username from update data if it exists
       const updateData = { ...formData };
-      delete updateData.username; // Username shouldn't be updated
+      delete updateData.username;
       
       const response = await authApi.updateProfile(updateData);
       
@@ -230,12 +230,11 @@ function Profile() {
               <Typography variant="h6" color="primary">
                 Profile Information
               </Typography>
-              <Button
-                startIcon={<EditIcon />}
-                onClick={() => setIsEditing(!isEditing)}
-              >
-                {isEditing ? 'Cancel' : 'Edit'}
-              </Button>
+              {!isAdmin && (
+                <Alert severity="info" sx={{ flex: 1, ml: 2 }}>
+                  Profile changes can only be made by administrators through the Users page.
+                </Alert>
+              )}
             </Box>
 
             {error && (
@@ -257,9 +256,8 @@ function Profile() {
                     fullWidth
                     label="First Name"
                     name="firstName"
-                    value={isEditing ? formData.firstName : user?.firstName || ''}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
+                    value={user?.firstName || ''}
+                    disabled={true}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         bgcolor: isDark 
@@ -274,9 +272,8 @@ function Profile() {
                     fullWidth
                     label="Last Name"
                     name="lastName"
-                    value={isEditing ? formData.lastName : user?.lastName || ''}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
+                    value={user?.lastName || ''}
+                    disabled={true}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         bgcolor: isDark 
@@ -291,9 +288,8 @@ function Profile() {
                     fullWidth
                     label="Email"
                     name="email"
-                    value={isEditing ? formData.email : user?.email || ''}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
+                    value={user?.email || ''}
+                    disabled={true}
                     type="email"
                     sx={{
                       '& .MuiOutlinedInput-root': {
@@ -309,9 +305,8 @@ function Profile() {
                     fullWidth
                     label="Country"
                     name="country"
-                    value={isEditing ? formData.country : user?.country || ''}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
+                    value={user?.country || ''}
+                    disabled={true}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         bgcolor: isDark 
@@ -326,9 +321,8 @@ function Profile() {
                     fullWidth
                     label="Phone Number"
                     name="phoneNumber"
-                    value={isEditing ? formData.phoneNumber : user?.phoneNumber || ''}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
+                    value={user?.phoneNumber || ''}
+                    disabled={true}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         bgcolor: isDark 
@@ -339,30 +333,6 @@ function Profile() {
                   />
                 </Grid>
               </Grid>
-
-              {isEditing && (
-                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    type="submit"
-                    disabled={loading}
-                    sx={{
-                      backgroundImage: isDark
-                        ? 'linear-gradient(to right, #A5B4FC, #C4B5FD)'
-                        : 'linear-gradient(to right, #6B46C1, #805AD5)',
-                      color: isDark ? '#1A202C' : '#FFFFFF',
-                      '&:hover': {
-                        backgroundImage: isDark
-                          ? 'linear-gradient(to right, #8B9CF5, #B19EF9)'
-                          : 'linear-gradient(to right, #553C9A, #6B46C1)',
-                      }
-                    }}
-                  >
-                    {loading ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                </Box>
-              )}
             </form>
           </MotionPaper>
         </Grid>

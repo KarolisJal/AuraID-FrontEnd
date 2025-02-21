@@ -19,6 +19,7 @@ import ValidationIndicator from '../../../components/common/ValidationIndicator'
 import { authApi, userApi } from '../../../services/api';
 import { countries } from '../../../utils/constants/countries';
 import { debounce } from 'lodash';
+import { handleError, ErrorTypes } from '../../../utils/errorHandler';
 
 function Register() {
   const navigate = useNavigate();
@@ -300,13 +301,8 @@ function Register() {
       toast.success('Registration successful! Please check your email to verify your account.');
       navigate('/login');
     } catch (error) {
-      if (error.response?.status === 429) {
-        setError('Too many registration attempts. Please try again later.');
-        toast.error('Too many registration attempts. Please try again later.');
-      } else {
-        setError(error.response?.data?.message || 'Registration failed');
-        toast.error(error.response?.data?.message || 'Registration failed');
-      }
+      handleError(error, ErrorTypes.AUTH);
+      setError(error.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
     }

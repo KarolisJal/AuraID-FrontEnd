@@ -1,74 +1,85 @@
-import { Box, Card, CardContent, Typography } from '@mui/material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React from 'react';
 import PropTypes from 'prop-types';
-import { useTheme } from '../../../theme/ThemeProvider';
+import { Box, Typography, CircularProgress, Alert } from '@mui/material';
+import { ResponsiveBar } from '@nivo/bar';
 
 const UserAnalytics = ({ data }) => {
-  const { currentTheme } = useTheme();
-
   if (!data) {
-    return null;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!Array.isArray(data.trends)) {
+    return (
+      <Alert severity="warning">
+        No analytics data available
+      </Alert>
+    );
   }
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          User Growth Analytics
-        </Typography>
-        <Box sx={{ width: '100%', height: 300 }}>
-          <ResponsiveContainer>
-            <LineChart
-              data={data.timeline || []}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 20,
-                bottom: 5,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="date" 
-                stroke={currentTheme === 'dark' ? '#fff' : '#666'}
-              />
-              <YAxis 
-                stroke={currentTheme === 'dark' ? '#fff' : '#666'}
-              />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="users"
-                stroke="#8884d8"
-                activeDot={{ r: 8 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Box>
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="body2" color="text.secondary">
-            New users in last 24h: {data.last24Hours}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Growth rate: {data.growthRate}%
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
+    <Box sx={{ height: 400 }}>
+      <ResponsiveBar
+        data={data.trends}
+        keys={['activeUsers', 'newUsers']}
+        indexBy="date"
+        margin={{ top: 50, right: 130, bottom: 50, left: 60 }}
+        padding={0.3}
+        valueScale={{ type: 'linear' }}
+        indexScale={{ type: 'band', round: true }}
+        colors={{ scheme: 'nivo' }}
+        axisTop={null}
+        axisRight={null}
+        axisBottom={{
+          tickSize: 5,
+          tickPadding: 5,
+          tickRotation: 0,
+          legend: 'Date',
+          legendPosition: 'middle',
+          legendOffset: 32
+        }}
+        axisLeft={{
+          tickSize: 5,
+          tickPadding: 5,
+          tickRotation: 0,
+          legend: 'Users',
+          legendPosition: 'middle',
+          legendOffset: -40
+        }}
+        labelSkipWidth={12}
+        labelSkipHeight={12}
+        legends={[
+          {
+            dataFrom: 'keys',
+            anchor: 'bottom-right',
+            direction: 'column',
+            justify: false,
+            translateX: 120,
+            translateY: 0,
+            itemsSpacing: 2,
+            itemWidth: 100,
+            itemHeight: 20,
+            itemDirection: 'left-to-right',
+            itemOpacity: 0.85,
+            symbolSize: 20
+          }
+        ]}
+      />
+    </Box>
   );
 };
 
 UserAnalytics.propTypes = {
   data: PropTypes.shape({
-    timeline: PropTypes.arrayOf(
-      PropTypes.shape({
-        date: PropTypes.string,
-        users: PropTypes.number,
-      })
-    ),
-    last24Hours: PropTypes.number,
-    growthRate: PropTypes.number,
-  }),
+    trends: PropTypes.arrayOf(PropTypes.shape({
+      date: PropTypes.string.isRequired,
+      activeUsers: PropTypes.number.isRequired,
+      newUsers: PropTypes.number.isRequired
+    }))
+  })
 };
 
 export default UserAnalytics; 

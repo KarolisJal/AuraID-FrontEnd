@@ -2,6 +2,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '../theme/ThemeProvider';
 import { AuthProvider } from '../contexts/AuthContext';
 import { LoadingProvider } from '../contexts/LoadingContext';
+import { DashboardProvider } from '../contexts/DashboardContext';
 import { ToastContainer } from 'react-toastify';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -29,23 +30,25 @@ export const AppProviders = ({ children }) => (
     <BrowserRouter>
       <LoadingProvider>
         <ThemeProvider>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <AuthProvider>
-              {children}
-              <ToastContainer
-                position="top-right"
-                autoClose={5000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="colored"
-              />
-            </AuthProvider>
-          </LocalizationProvider>
+          <AuthProvider>
+            <DashboardProvider>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                {children}
+                <ToastContainer
+                  position="top-right"
+                  autoClose={5000}
+                  hideProgressBar={false}
+                  newestOnTop
+                  closeOnClick
+                  rtl={false}
+                  pauseOnFocusLoss
+                  draggable
+                  pauseOnHover
+                  theme="colored"
+                />
+              </LocalizationProvider>
+            </DashboardProvider>
+          </AuthProvider>
         </ThemeProvider>
       </LoadingProvider>
     </BrowserRouter>

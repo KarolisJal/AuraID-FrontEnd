@@ -14,7 +14,7 @@ const HealthIndicator = ({ label, value, icon: Icon, color }) => (
       <Box sx={{ width: '100%', mr: 1 }}>
         <LinearProgress
           variant="determinate"
-          value={value}
+          value={value || 0}
           sx={{
             height: 8,
             borderRadius: 5,
@@ -30,15 +30,24 @@ const HealthIndicator = ({ label, value, icon: Icon, color }) => (
 );
 
 const SystemHealth = ({ metrics }) => {
-  if (!metrics) {
-    return (
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography color="text.secondary">
-          System health data unavailable
-        </Typography>
-      </Box>
-    );
-  }
+  // Default values for metrics
+  const defaultMetrics = {
+    cpuUsage: 0,
+    memoryUsage: 0,
+    diskUsage: 0,
+    timestamp: new Date().toISOString(),
+    warnings: []
+  };
+
+  // Merge provided metrics with defaults
+  const safeMetrics = metrics ? {
+    ...defaultMetrics,
+    ...metrics,
+    // Ensure numeric values are valid numbers or default to 0
+    cpuUsage: Number.isFinite(metrics.cpuUsage) ? metrics.cpuUsage : 0,
+    memoryUsage: Number.isFinite(metrics.memoryUsage) ? metrics.memoryUsage : 0,
+    diskUsage: Number.isFinite(metrics.diskUsage) ? metrics.diskUsage : 0,
+  } : defaultMetrics;
 
   const getHealthColor = (value) => {
     if (value >= 90) return '#f44336'; // Red
@@ -51,35 +60,35 @@ const SystemHealth = ({ metrics }) => {
       <Grid item xs={12}>
         <HealthIndicator
           label="CPU Usage"
-          value={metrics.cpuUsage}
+          value={safeMetrics.cpuUsage}
           icon={Speed}
-          color={getHealthColor(metrics.cpuUsage)}
+          color={getHealthColor(safeMetrics.cpuUsage)}
         />
       </Grid>
       <Grid item xs={12}>
         <HealthIndicator
           label="Memory Usage"
-          value={metrics.memoryUsage}
+          value={safeMetrics.memoryUsage}
           icon={Memory}
-          color={getHealthColor(metrics.memoryUsage)}
+          color={getHealthColor(safeMetrics.memoryUsage)}
         />
       </Grid>
       <Grid item xs={12}>
         <HealthIndicator
           label="Disk Usage"
-          value={metrics.diskUsage}
+          value={safeMetrics.diskUsage}
           icon={Storage}
-          color={getHealthColor(metrics.diskUsage)}
+          color={getHealthColor(safeMetrics.diskUsage)}
         />
       </Grid>
       <Grid item xs={12}>
         <Box sx={{ mt: 2 }}>
           <Typography variant="body2" color="text.secondary">
-            Last Updated: {new Date(metrics.timestamp).toLocaleString()}
+            Last Updated: {new Date(safeMetrics.timestamp).toLocaleString()}
           </Typography>
-          {metrics.warnings?.length > 0 && (
+          {safeMetrics.warnings?.length > 0 && (
             <Box sx={{ mt: 1 }}>
-              {metrics.warnings.map((warning, index) => (
+              {safeMetrics.warnings.map((warning, index) => (
                 <Typography
                   key={index}
                   variant="body2"
@@ -106,10 +115,10 @@ HealthIndicator.propTypes = {
 
 SystemHealth.propTypes = {
   metrics: PropTypes.shape({
-    cpuUsage: PropTypes.number.isRequired,
-    memoryUsage: PropTypes.number.isRequired,
-    diskUsage: PropTypes.number.isRequired,
-    timestamp: PropTypes.string.isRequired,
+    cpuUsage: PropTypes.number,
+    memoryUsage: PropTypes.number,
+    diskUsage: PropTypes.number,
+    timestamp: PropTypes.string,
     warnings: PropTypes.arrayOf(PropTypes.string),
   }),
 };

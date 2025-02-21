@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
   Box,
@@ -13,6 +13,7 @@ import {
   MenuItem,
   ListItemIcon,
   Tooltip,
+  Divider,
 } from '@mui/material';
 import {
   Dashboard,
@@ -21,6 +22,10 @@ import {
   Logout,
   Security,
   History,
+  Storage as ResourceIcon,
+  AccountTree as WorkflowIcon,
+  Timeline as WorkflowTrackingIcon,
+  AdminPanelSettings,
 } from '@mui/icons-material';
 import { authApi } from '../../services/api';
 import Logo from '../common/Logo';
@@ -28,15 +33,25 @@ import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { useTheme } from '../../theme/ThemeProvider';
 import { themeConstants } from '../../theme/index';
 import { toast } from 'react-toastify';
+import { NotificationIcon } from '../common/NotificationIcon';
 
-const pages = [
+// User navigation items
+const userPages = [
   { name: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
+  { name: 'Resources', path: '/resources', icon: <ResourceIcon /> },
+  { name: 'Access Requests', path: '/access-requests', icon: <WorkflowTrackingIcon /> },
+];
+
+// Admin-only navigation items
+const adminPages = [
+  { name: 'Workflows', path: '/workflows', icon: <WorkflowIcon /> },
   { name: 'Users', path: '/users', icon: <Person /> },
-  { name: 'Audit Log', path: '/audit', icon: <History /> }
+  { name: 'Audit Log', path: '/audit', icon: <History /> },
 ];
 
 function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const muiTheme = useMuiTheme();
@@ -53,6 +68,8 @@ function Navbar() {
     };
     fetchCurrentUser();
   }, []);
+
+  const isAdmin = currentUser?.roles?.includes('ADMIN');
 
   const handleOpenUserMenu = (event) => {
     setAnchorElUser(event.currentTarget);
@@ -113,7 +130,8 @@ function Navbar() {
           </Box>
 
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-            {pages.map((page) => (
+            {/* User navigation items */}
+            {userPages.map((page) => (
               <Button
                 key={page.path}
                 onClick={() => handleNavigation(page.path)}
@@ -133,9 +151,43 @@ function Navbar() {
                 {page.name}
               </Button>
             ))}
+
+            {/* Admin navigation items */}
+            {isAdmin && (
+              <>
+                <Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <AdminPanelSettings sx={{ mr: 1, color: 'primary.main' }} />
+                  <Typography variant="subtitle2" color="primary.main" sx={{ mr: 2 }}>
+                    Admin
+                  </Typography>
+                </Box>
+                {adminPages.map((page) => (
+                  <Button
+                    key={page.path}
+                    onClick={() => handleNavigation(page.path)}
+                    sx={{
+                      mx: 1,
+                      color: location.pathname === page.path 
+                        ? 'primary.main'
+                        : 'text.primary',
+                      '&:hover': {
+                        backgroundColor: currentTheme === 'light'
+                          ? 'rgba(107, 70, 193, 0.04)'
+                          : 'rgba(128, 90, 213, 0.04)'
+                      }
+                    }}
+                    startIcon={page.icon}
+                  >
+                    {page.name}
+                  </Button>
+                ))}
+              </>
+            )}
           </Box>
 
-          <Box sx={{ flexGrow: 0 }}>
+          <Box sx={{ flexGrow: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <NotificationIcon />
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar sx={{ 

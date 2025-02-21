@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Grid,
@@ -53,10 +53,11 @@ import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { toast } from 'react-toastify';
 import { ErrorBoundary } from 'react-error-boundary';
 import AuditDashboard from '../../../features/admin/components/AuditDashboard';
-import AuditLog from '../../../features/admin/components/AuditLog';
 import { ResponsiveHeatMap } from '@nivo/heatmap';
 import { ResponsiveBar } from '@nivo/bar';
 import { countries } from '../../../utils/constants/countries';
+import PropTypes from 'prop-types';
+import { handleError, ErrorTypes } from '../../../utils/errorHandler';
 
 const MotionGrid = motion(Grid);
 const MotionCard = motion(Card);
@@ -75,6 +76,20 @@ const severityIcons = {
 };
 
 const DashboardSection = ({ children, title }) => {
+  // Simplified validation that doesn't throw errors
+  const hasValidChildren = children && (
+    React.isValidElement(children) || 
+    (Array.isArray(children) && children.every(child => React.isValidElement(child)))
+  );
+
+  if (!hasValidChildren) {
+    return (
+      <Alert severity="warning" sx={{ m: 1 }}>
+        No content available for {title}
+      </Alert>
+    );
+  }
+
   return (
     <ErrorBoundary
       fallback={({ error }) => (
@@ -83,9 +98,24 @@ const DashboardSection = ({ children, title }) => {
         </Alert>
       )}
     >
-      {children}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        {title && (
+          <Typography variant="h6" gutterBottom>
+            {title}
+          </Typography>
+        )}
+        {children}
+      </Paper>
     </ErrorBoundary>
   );
+};
+
+DashboardSection.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.element,
+    PropTypes.arrayOf(PropTypes.element)
+  ]).isRequired,
+  title: PropTypes.string.isRequired
 };
 
 function AdminDashboard() {
@@ -132,9 +162,8 @@ function AdminDashboard() {
       setLastRefresh(new Date());
       setError(null);
     } catch (error) {
-      console.error('Dashboard fetch error:', error);
-      toast.error('Failed to fetch dashboard data');
-      setError(error);
+      const appError = handleError(error, ErrorTypes.DASHBOARD);
+      setError(appError.message);
     } finally {
       setLoading(false);
     }
@@ -145,7 +174,7 @@ function AdminDashboard() {
       await dashboardApi.performBackup();
       toast.success('System backup initiated successfully');
     } catch (error) {
-      toast.error('Failed to initiate system backup');
+      handleError(error, ErrorTypes.SERVER);
     }
   };
 
@@ -154,7 +183,7 @@ function AdminDashboard() {
       await dashboardApi.clearCache();
       toast.success('Cache cleared successfully');
     } catch (error) {
-      toast.error('Failed to clear cache');
+      handleError(error, ErrorTypes.SERVER);
     }
   };
 
@@ -164,7 +193,7 @@ function AdminDashboard() {
         await dashboardApi.restartServer();
         toast.success('Server restart initiated');
       } catch (error) {
-        toast.error('Failed to restart server');
+        handleError(error, ErrorTypes.SERVER);
       }
     }
   };
@@ -194,7 +223,7 @@ function AdminDashboard() {
 
   return (
     <Box>
-      {loading && <LinearProgress />}
+      {loading && <LinearProgress variant="indeterminate" />}
       
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -419,13 +448,6 @@ function AdminDashboard() {
             </DashboardSection>
           </Grid>
 
-          {/* Audit Logs */}
-          <Grid item xs={12}>
-            <DashboardSection title="Audit Logs">
-              <AuditLog />
-            </DashboardSection>
-          </Grid>
-
           {/* Activity Heatmap */}
           <Grid item xs={12} md={6}>
             <Card>
@@ -465,26 +487,10 @@ function AdminDashboard() {
                         scheme: 'blues'
                       }}
                       emptyColor="#555555"
-                      borderColor={{
-                        from: 'color',
-                        modifiers: [['darker', 0.6]]
-                      }}
-                      animate={true}
-                      motionStiffness={80}
-                      motionDamping={9}
-                      hoverTarget="cell"
-                      cellHoverOthersOpacity={0.25}
                     />
                   ) : (
-                    <Box sx={{ 
-                      height: '100%', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center' 
-                    }}>
-                      <Typography color="text.secondary">
-                        No activity data available
-                      </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                      <Typography color="text.secondary">No activity data available</Typography>
                     </Box>
                   )}
                 </Box>

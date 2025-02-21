@@ -1,44 +1,88 @@
 import { toast } from 'react-toastify';
 
-export const handleApiError = (error) => {
-  console.error('API Error:', error);
+export const ErrorTypes = {
+  RATE_LIMIT: 'RATE_LIMIT',
+  NETWORK: 'NETWORK',
+  AUTH: 'AUTH',
+  VALIDATION: 'VALIDATION',
+  SERVER: 'SERVER',
+  UNKNOWN: 'UNKNOWN'
+};
+
+export const ErrorMessages = {
+  [ErrorTypes.RATE_LIMIT]: 'Too many requests. Please wait before trying again.',
+  [ErrorTypes.NETWORK]: 'Network error. Please check your connection.',
+  [ErrorTypes.AUTH]: 'Authentication error. Please log in again.',
+  [ErrorTypes.VALIDATION]: 'Invalid input. Please check your data.',
+  [ErrorTypes.SERVER]: 'Server error. Please try again later.',
+  [ErrorTypes.UNKNOWN]: 'An unexpected error occurred.'
+};
+
+export class AppError extends Error {
+  constructor(type, message, originalError = null) {
+    super(message || ErrorMessages[type]);
+    this.type = type;
+    this.originalError = originalError;
+  }
+}
+
+export const handleError = (error, defaultType = ErrorTypes.UNKNOWN) => {
+  console.error('Error details:', error);
+
+  // Determine error type
+  let errorType = defaultType;
+  let errorMessage = '';
 
   if (error.response) {
-    // The request was made and the server responded with a status code
-    // that falls out of the range of 2xx
-    const status = error.response.status;
-    const message = error.response.data?.message || 'An error occurred';
-
-    switch (status) {
-      case 400:
-        toast.error(`Bad Request: ${message}`);
+    switch (error.response.status) {
+      case 429:
+        errorType = ErrorTypes.RATE_LIMIT;
+        const retryAfter = error.response.headers['retry-after'];
+        errorMessage = retryAfter 
+          ? `Rate limit exceeded. Please try again in ${retryAfter} seconds.`
+          : ErrorMessages[ErrorTypes.RATE_LIMIT];
         break;
       case 401:
-        toast.error('Session expired. Please login again.');
-        // Handle unauthorized access
+        errorType = ErrorTypes.AUTH;
         break;
-      case 403:
-        toast.error('You do not have permission to perform this action');
-        break;
-      case 404:
-        toast.error('Resource not found');
-        break;
-      case 422:
-        toast.error('Validation error. Please check your input.');
+      case 400:
+        errorType = ErrorTypes.VALIDATION;
+        errorMessage = error.response.data?.message || ErrorMessages[ErrorTypes.VALIDATION];
         break;
       case 500:
-        toast.error('Internal server error. Please try again later.');
+        errorType = ErrorTypes.SERVER;
         break;
       default:
-        toast.error(message);
+        errorType = ErrorTypes.UNKNOWN;
     }
   } else if (error.request) {
-    // The request was made but no response was received
-    toast.error('No response from server. Please check your internet connection.');
-  } else {
-    // Something happened in setting up the request that triggered an Error
-    toast.error('An unexpected error occurred');
+    errorType = ErrorTypes.NETWORK;
   }
 
-  return Promise.reject(error);
+  // Use custom message if provided, otherwise use default for type
+  const finalMessage = errorMessage || ErrorMessages[errorType];
+
+  // Show toast notification based on error type
+  switch (errorType) {
+    case ErrorTypes.RATE_LIMIT:
+      toast.warning(finalMessage);
+      break;
+    case ErrorTypes.AUTH:
+      toast.error(finalMessage);
+      // Optionally redirect to login
+      if (window.location.pathname !== '/login') {
+        setTimeout(() => window.location.href = '/login', 1500);
+      }
+      break;
+    default:
+      toast.error(finalMessage);
+  }
+
+  return new AppError(errorType, finalMessage, error);
+};
+
+// Legacy support for existing code
+export const handleApiError = (error) => {
+  const appError = handleError(error);
+  return Promise.reject(appError);
 }; 
