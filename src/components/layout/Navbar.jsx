@@ -84,9 +84,14 @@ function Navbar() {
     handleCloseUserMenu();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
+      // Call the backend to blacklist the token
+      await authApi.logout();
+      
+      // Remove token from localStorage
       localStorage.removeItem('token');
+      
       toast.success('Successfully logged out!', {
         position: "top-right",
         autoClose: 3000,
@@ -101,11 +106,16 @@ function Navbar() {
           borderLeft: '4px solid #6B46C1'
         },
       });
+      
       navigate('/login');
       handleCloseUserMenu();
     } catch (error) {
-      toast.error('Error during logout. Please try again.');
       console.error('Logout error:', error);
+      // Still remove token and redirect even if the API call fails
+      localStorage.removeItem('token');
+      toast.error('There was an issue during logout, but you have been logged out successfully.');
+      navigate('/login');
+      handleCloseUserMenu();
     }
   };
 

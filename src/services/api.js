@@ -340,7 +340,15 @@ export const authApi = {
     newPassword: password
   }),
   testEmail: (email) => api.post(`/auth/test-email?email=${email}`),
-  getCurrentUser: () => api.get('/users/me')
+  getCurrentUser: () => api.get('/users/me'),
+  logout: () => {
+    const token = localStorage.getItem('token');
+    return api.post('/auth/logout', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  }
 };
 
 export const dashboardApi = {
